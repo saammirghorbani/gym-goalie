@@ -1,1 +1,1 @@
-from gym_goalie.envs.goalie_env import GoalieEnv
+from gym_goalie.envs.goalie import GoalieTestEnv
