@@ -5,7 +5,18 @@ from gym_goalie.envs.robotics import rotations, robot_env, utils
 
 def goal_distance(goal_a, goal_b):
     assert goal_a.shape == goal_b.shape
-    return np.linalg.norm(goal_a - goal_b, axis=-1)
+
+    #return np.linalg.norm(goal_a - goal_b, axis=-1)
+
+    # NEW CODE
+
+    dist = np.abs(goal_a[:1]-goal_b[:1])
+    #print(dist)
+    return dist
+
+    # end
+
+
 
 
 class GoalieEnv(robot_env.RobotEnv):
@@ -119,10 +130,16 @@ class GoalieEnv(robot_env.RobotEnv):
             object_velp.ravel(), object_velr.ravel(), grip_velp, gripper_vel,
         ])
 
+        # NEW CODE
+
+        goal = self.goal
+
+        # end
+
         return {
             'observation': obs.copy(),
             'achieved_goal': achieved_goal.copy(),
-            'desired_goal': self.goal.copy(),
+            'desired_goal': goal.copy(),
         }
 
     def _viewer_setup(self):
@@ -157,7 +174,7 @@ class GoalieEnv(robot_env.RobotEnv):
             object_qpos[:2] = object_xpos
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
-            #NEW CODE
+            # NEW CODE
 
             object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
             object_qpos[:1] -= 0.1  # moves away from wall
@@ -166,8 +183,11 @@ class GoalieEnv(robot_env.RobotEnv):
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
             object_qvel = self.sim.data.get_joint_qvel('object0:joint')
-            object_qvel[:1] = -2  # move toward robot
+            object_qvel[:1] = -2  # move towards robot
             self.sim.data.set_joint_qvel('object0:joint', object_qvel)
+
+            # end
+
 
         self.sim.forward()
         return True
@@ -184,6 +204,16 @@ class GoalieEnv(robot_env.RobotEnv):
         else:
             goal = self.initial_gripper_xpos[:3] + \
                 self.np_random.uniform(-0.15, 0.15, size=3)
+
+
+        # NEW CODE
+
+        goal = self.sim.data.get_body_xpos('wall0')[:3]
+        goal[:1] -= 0.05  # moves away from wall
+        #goal[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
+
+        # end
+
         return goal.copy()
 
     def _is_success(self, achieved_goal, desired_goal):
