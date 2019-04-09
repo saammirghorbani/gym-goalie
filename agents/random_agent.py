@@ -1,31 +1,30 @@
+
 import argparse
 import sys
 
+import gym_goalie
 import gym
 from gym import wrappers, logger
 
-
 class RandomAgent(object):
     """The world's simplest agent!"""
-
     def __init__(self, action_space):
         self.action_space = action_space
 
     def act(self, observation, reward, done):
         return self.action_space.sample()
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
-    parser.add_argument('env_id', nargs='?', default='BlockSlide-v1',
-                        help='Select the environment to run')
+    parser.add_argument('env_id', nargs='?', default='gym_goalie:Goalie-v0', help='Select the environment to run')
     args = parser.parse_args()
 
     # You can set the level to logger.DEBUG or logger.WARN if you
     # want to change the amount of output.
     logger.set_level(logger.INFO)
 
-    env = gym.make('gym_goalie:Goalie-v0')
+
+    env = gym.make(args.env_id)
 
     # You provide the directory to write to (can be an existing
     # directory, including one with existing data -- all monitor files
@@ -40,13 +39,20 @@ if __name__ == '__main__':
     reward = 0
     done = False
 
+    step_count_max = 700
+
+    #env._max_episode_steps = 50  # Doesn't work?!?
+
     for i in range(episode_count):
+        step_counter = 0
+        env.stats_recorder.done = True  # !!! EXTREME HACKER SOLUTION
         ob = env.reset()
         while True:
             action = agent.act(ob, reward, done)
             ob, reward, done, _ = env.step(action)
             env.render()
-            if done:
+            step_counter += 1
+            if done or step_counter > step_count_max/20:  # n_substeps :( Doesn't really work
                 break
             # Note there's no env.render() here. But the environment still can open window and
             # render if asked by env.monitor: it calls env.render('rgb_array') to record video.
