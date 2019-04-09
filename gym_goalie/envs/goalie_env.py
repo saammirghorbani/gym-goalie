@@ -157,6 +157,18 @@ class GoalieEnv(robot_env.RobotEnv):
             object_qpos[:2] = object_xpos
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
+            #NEW CODE
+
+            object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
+            object_qpos[:1] -= 0.1  # moves away from wall
+            object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
+
+            self.sim.data.set_joint_qpos('object0:joint', object_qpos)
+
+            object_qvel = self.sim.data.get_joint_qvel('object0:joint')
+            object_qvel[:1] = -2  # move toward robot
+            self.sim.data.set_joint_qvel('object0:joint', object_qvel)
+
         self.sim.forward()
         return True
 
