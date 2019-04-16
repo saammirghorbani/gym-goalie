@@ -24,7 +24,7 @@ if __name__ == '__main__':
     logger.set_level(logger.INFO)
 
 
-    env = gym.make(args.env_id)
+    env = gym.make('gym_goalie:Goalie-v0')
 
     # You provide the directory to write to (can be an existing
     # directory, including one with existing data -- all monitor files
@@ -39,20 +39,15 @@ if __name__ == '__main__':
     reward = 0
     done = False
 
-    step_count_max = 700
-
-    #env._max_episode_steps = 50  # Doesn't work?!?
+    env.env._max_episode_steps = 40  # not sure what this means? Doesn't seem represent nbr of steps in simulation
 
     for i in range(episode_count):
-        step_counter = 0
-        env.stats_recorder.done = True  # !!! EXTREME HACKER SOLUTION
         ob = env.reset()
         while True:
             action = agent.act(ob, reward, done)
             ob, reward, done, _ = env.step(action)
             env.render()
-            step_counter += 1
-            if done or step_counter > step_count_max/20:  # n_substeps :( Doesn't really work
+            if done:
                 break
             # Note there's no env.render() here. But the environment still can open window and
             # render if asked by env.monitor: it calls env.render('rgb_array') to record video.
