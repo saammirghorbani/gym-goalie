@@ -12,7 +12,9 @@ class RandomAgent(object):
         self.action_space = action_space
 
     def act(self, observation, reward, done):
+        # has the form [-1:1, -1:1, -1:1, -1:1]
         return self.action_space.sample()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)

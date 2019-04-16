@@ -11,6 +11,8 @@ def goal_distance(goal_a, goal_b):
     # NEW CODE
 
     dist = np.abs(goal_a[:1]-goal_b[:1])
+    if goal_a[2] < 0.4:  # something like 0.42 is table height
+        dist += 1000  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
     #print(dist)
     return dist
 
