@@ -12,3 +12,6 @@ pip install -e .
 ```bash
 env = gym.make('gym_goalie:Goalie-v0')
 ```
+
+# Baselines
+https://github.com/openai/baselines

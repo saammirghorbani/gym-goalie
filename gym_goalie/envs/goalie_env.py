@@ -10,10 +10,18 @@ def goal_distance(goal_a, goal_b):
 
     # NEW CODE
 
-    dist = np.abs(goal_a[:1]-goal_b[:1])
+    if goal_a.shape[0] > 3:
+        dist_list = []
+        for g_a, g_b in zip(goal_a, goal_b):
+            dist = np.abs(g_a[0] - g_b[0])
+            if g_a[2] < 0.4:  # something like 0.42 is table height
+                dist += 100  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
+            dist_list.append(dist)
+        return np.array(dist_list)
+
+    dist = np.abs(goal_a[0]-goal_b[0])
     if goal_a[2] < 0.4:  # something like 0.42 is table height
-        dist += 1000  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
-    #print(dist)
+        dist += 100  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
     return dist
 
     # end
@@ -70,6 +78,7 @@ class GoalieEnv(robot_env.RobotEnv):
             return -(d > self.distance_threshold).astype(np.float32)
         else:
             return -d
+        # return -d
 
     # RobotEnv methods
     # ----------------------------
@@ -180,12 +189,12 @@ class GoalieEnv(robot_env.RobotEnv):
 
             object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
             object_qpos[:1] -= 0.1  # moves away from wall
-            object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
+            object_qpos[1:2] += 0.2  # np.random.uniform(-0.05, 0.05)  # random pos along wall
 
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
             object_qvel = self.sim.data.get_joint_qvel('object0:joint')
-            object_qvel[:1] = -2  # move towards robot
+            object_qvel[:1] = -1  # move towards robot
             self.sim.data.set_joint_qvel('object0:joint', object_qvel)
 
             # end

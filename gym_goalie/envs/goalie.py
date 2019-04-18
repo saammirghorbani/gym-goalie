@@ -10,7 +10,7 @@ MODEL_XML_PATH = os.path.join('fetch', 'goalie.xml')
 
 
 class GoalieTestEnv(goalie_env.GoalieEnv, utils.EzPickle):
-    def __init__(self, reward_type='sparse'):
+    def __init__(self, reward_type='dense'):
         initial_qpos = {
             'robot0:slide0': 0.05,
             'robot0:slide1': 0.48,
@@ -19,7 +19,7 @@ class GoalieTestEnv(goalie_env.GoalieEnv, utils.EzPickle):
         }
         goalie_env.GoalieEnv.__init__(
             self, MODEL_XML_PATH, has_object=True, block_gripper=True, n_substeps=20,  # 20 steps until update of rewards
-            gripper_extra_height=-0.02, target_in_the_air=False, target_offset=np.array([0.4, 0.0, 0.0]),
-            obj_range=0.1, target_range=0.3, distance_threshold=0.05,  # !!! may be super relevant!
+            gripper_extra_height=-0.02, target_in_the_air=False, target_offset=0.0,
+            obj_range=0.1, target_range=0.3, distance_threshold=20,  # !!! may be super relevant!
             initial_qpos=initial_qpos, reward_type=reward_type)
         utils.EzPickle.__init__(self)
