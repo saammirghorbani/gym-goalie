@@ -183,13 +183,13 @@ class GoalieEnv(robot_env.RobotEnv):
             object_qpos = self.sim.data.get_joint_qpos('object0:joint')
             assert object_qpos.shape == (7,)
             object_qpos[:2] = object_xpos
-            self.sim.data.set_joint_qpos('object0:joint', object_qpos)
+            # self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
             # NEW CODE
 
             object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
             object_qpos[:1] -= 0.1  # moves away from wall
-            object_qpos[1:2] += 0.2  # np.random.uniform(-0.05, 0.05)  # random pos along wall
+            object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
 
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
