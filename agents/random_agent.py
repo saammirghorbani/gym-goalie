@@ -41,13 +41,15 @@ if __name__ == '__main__':
     reward = 0
     done = False
 
-    env.env._max_episode_steps = 40  # not sure what this means? Doesn't seem represent nbr of steps in simulation
+    #env.env._max_episode_steps = 40  # not sure what this means? Doesn't seem represent nbr of steps in simulation
 
     for i in range(episode_count):
         ob = env.reset()
         while True:
             action = agent.act(ob, reward, done)
             ob, reward, done, _ = env.step(action)
+            if reward == 1:
+                print('yaya!')
             env.render()
             if done:
                 break
