@@ -8,7 +8,7 @@
 	<include file="shared.xml"></include>
 
 	<worldbody>
-		<geom name="floor0" pos="1 0.75 0" size="1.05 0.7 1" type="plane" condim="3" material="floor_mat"></geom>
+		<geom name="floor0" pos="1 0.75 0" size="1.05 0.7 1" type="plane" condim="3" material="floor_mat" solref="-100 -100"></geom>
 		<body name="floor0" pos="1 0.75 0">
 			<site name="target0" pos="0 0 0.5" size="0.02 0.02 0.02" rgba="1 0 0 1" type="sphere"></site>
 		</body>
@@ -16,16 +16,31 @@
 		<include file="robot.xml"></include>
 
 		<body name="table0" pos="1.32441906 0.75018422 0.2">
-			<geom size="0.625 0.45 0.2" type="box" condim="3" name="table0" material="table_mat" mass="2000" friction="0.1 0.005 0.0001"></geom>
+			<geom size="0.625 0.45 0.2" type="box" condim="3" name="table0" material="table_mat" mass="2000" friction="0.0001 0.005 0.0000001" solref="-100 -100"></geom>
 		</body>
 
-		<body name="wall0" pos="1.95 0.75018422 0.4">
-			<geom size="0.05 0.45 0.4" type="box" condim="1" name="wall0" material="table_mat" mass="2000" friction="0 0 0"></geom>
+		<body name="wall0" pos="1.95 0.75018422 0.25">
+			<geom size="0.04 0.45 0.25" type="box" condim="1" name="wall0" material="table_mat" mass="2000" friction="0 0 0" ></geom>
 		</body>
+
+		<!--
+		<body name="wall3" pos="0.7 0.75018422 0.25">
+			<geom size="0.04 0.45 0.25" type="box" condim="1" name="wall3" material="table_mat" mass="2000" friction="0 0 0" ></geom>
+		</body>
+		-->
+
+		<body name="wall1" pos="1.32441906 1.225 0.25">
+			<geom size="0.625 0.04 0.25" type="box" condim="1" name="wall1" material="table_mat" mass="2000" friction="0 0 0" ></geom>
+		</body>
+
+		<body name="wall2" pos="1.32441906 0.275 0.25">
+			<geom size="0.625 0.04 0.25" type="box" condim="1" name="wall2" material="table_mat" mass="2000" friction="0 0 0" ></geom>
+		</body>
+
 
 		<body name="object0" pos="0.025 0.025 0.02">
 			<joint name="object0:joint" type="free" damping="0.0001" ></joint>
-			<geom size="0.025 0.02" type="sphere" condim="3" name="object0" material="puck_mat" friction="0.1 0.005 0.0001" mass="2"></geom>
+			<geom size="0.025 0.02" type="sphere" condim="3" name="object0" material="puck_mat" friction="0.1 0.005 0.0001" mass="2" solref="-1000 -0.01"></geom>
 			<site name="object0" pos="0 0 0" size="0.02 0.02 0.02" rgba="1 0 0 1" type="sphere"></site>
 		</body>
 

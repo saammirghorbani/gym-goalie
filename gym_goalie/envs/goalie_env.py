@@ -195,6 +195,7 @@ class GoalieEnv(robot_env.RobotEnv):
 
             object_qvel = self.sim.data.get_joint_qvel('object0:joint')
             object_qvel[:1] = -1  # move towards robot
+            object_qvel[1:2] = np.random.uniform(-1, 1)  # different directions
             self.sim.data.set_joint_qvel('object0:joint', object_qvel)
 
             # end
