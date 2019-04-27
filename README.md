@@ -19,6 +19,6 @@ or use our modified version :)
 
 ```bash
 pip install pynput
-cd gym-goalie/baselines
+cd baselines
 pip install -e .
 ```
