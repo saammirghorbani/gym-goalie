@@ -15,7 +15,7 @@ env = gym.make('gym_goalie:Goalie-v0')
 
 # Baselines
 https://github.com/openai/baselines
-or use our modified version :)
+or use our modified version https://github.com/saammirghorbani/baselines :)
 
 ```bash
 pip install pynput
