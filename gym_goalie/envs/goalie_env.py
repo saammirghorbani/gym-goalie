@@ -87,6 +87,8 @@ class GoalieEnv(robot_env.RobotEnv):
         if self.block_gripper:
             self.sim.data.set_joint_qpos('robot0:l_gripper_finger_joint', 0.)
             self.sim.data.set_joint_qpos('robot0:r_gripper_finger_joint', 0.)
+            self.sim.data.set_joint_qpos('robot1:l_gripper_finger_joint', 0.)
+            self.sim.data.set_joint_qpos('robot1:r_gripper_finger_joint', 0.)
             self.sim.forward()
 
     def _set_action(self, action):
@@ -102,6 +104,12 @@ class GoalieEnv(robot_env.RobotEnv):
         if self.block_gripper:
             gripper_ctrl = np.zeros_like(gripper_ctrl)
         action = np.concatenate([pos_ctrl, rot_ctrl, gripper_ctrl])
+
+        action2 = np.concatenate([[-action[0], -action[1]], action[2:7]])
+
+        print(action2)
+
+        action = np.transpose(np.array(list(zip(action[0:7], action2[0:7]))))
 
         # Apply action to simulation.
         utils.ctrl_set_action(self.sim, action)
@@ -244,6 +252,14 @@ class GoalieEnv(robot_env.RobotEnv):
         gripper_rotation = np.array([1., 0., 1., 0.])
         self.sim.data.set_mocap_pos('robot0:mocap', gripper_target)
         self.sim.data.set_mocap_quat('robot0:mocap', gripper_rotation)
+
+        gripper_target = np.array(
+            [-0.498, 0.005, -0.431 + self.gripper_extra_height]) + self.sim.data.get_site_xpos('robot1:grip')
+        gripper_rotation = np.array([1., 0., 1., 0.])
+        self.sim.data.set_mocap_pos('robot1:mocap', gripper_target)
+        self.sim.data.set_mocap_quat('robot1:mocap', gripper_rotation)
+
+
         for _ in range(10):
             self.sim.step()
 
