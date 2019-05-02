@@ -25,11 +25,11 @@
 			<geom size="0.001 0.45 0.20" type="box" condim="1" name="wall0" material="table_mat" mass="2000" friction="0 0 0" ></geom>
 		</body>
 
-		<!--
-		<body name="wall3" pos="0.7 0.75018422 0.25">
-			<geom size="0.04 0.45 0.25" type="box" condim="1" name="wall3" material="table_mat" mass="2000" friction="0 0 0" ></geom>
+
+		<body name="wall3" pos="0.7 0.75018422 0.2">
+			<geom size="0.001 0.45 0.2" type="box" condim="1" name="wall3" material="table_mat" mass="2000" friction="0 0 0" ></geom>
 		</body>
-		-->
+
 
 		<body name="wall1" pos="1.32441906 1.225 0.25">
 			<geom size="0.625 0.04 0.25" type="box" condim="1" name="wall1" material="table_mat" mass="2000" friction="0 0 0" ></geom>

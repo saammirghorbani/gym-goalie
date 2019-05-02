@@ -13,15 +13,15 @@ def goal_distance(goal_a, goal_b):
     if goal_a.shape[0] > 3:
         dist_list = []
         for g_a, g_b in zip(goal_a, goal_b):
-            dist = np.abs(g_a[0] - g_b[0])
-            if g_a[2] < 0.4:  # something like 0.42 is table height
-                dist += 100  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
+            dist = -(g_a[0] - g_b[0])
+            #if g_a[2] < 0.4:  # something like 0.42 is table height
+            #    dist += 100  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
             dist_list.append(dist)
         return np.array(dist_list)
 
-    dist = np.abs(goal_a[0]-goal_b[0])
-    if goal_a[2] < 0.4:  # something like 0.42 is table height
-        dist += 100  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
+    dist = -(goal_a[0]-goal_b[0])
+    #if goal_a[2] < 0.4:  # something like 0.42 is table height
+    #    dist += 100  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
     return dist
 
     # end
@@ -63,6 +63,7 @@ class GoalieEnv(robot_env.RobotEnv):
         self.target_range = target_range
         self.distance_threshold = distance_threshold
         self.reward_type = reward_type
+        self.other_model = None
 
         super(GoalieEnv, self).__init__(
             model_path=model_path, n_substeps=n_substeps, n_actions=4,
@@ -70,6 +71,9 @@ class GoalieEnv(robot_env.RobotEnv):
 
     # GoalEnv methods
     # ----------------------------
+
+    def set_other_model(self, model):
+        self.other_model = model
 
     def compute_reward(self, achieved_goal, goal, info):
         # Compute distance between goal and the achieved goal.
@@ -105,11 +109,24 @@ class GoalieEnv(robot_env.RobotEnv):
             gripper_ctrl = np.zeros_like(gripper_ctrl)
         action = np.concatenate([pos_ctrl, rot_ctrl, gripper_ctrl])
 
-        action2 = np.concatenate([[-action[0], -action[1]], action[2:7]])
+        if self.other_model is not None:
+            obs = self._get_obs_2()
+            action_2, _, _, _ = self.other_model.step(obs)
+        else:
+            action_2 = self.action_space.sample()
 
-        print(action2)
+        pos_ctrl_2, gripper_ctrl_2 = action_2[:3], action_2[3]
 
-        action = np.transpose(np.array(list(zip(action[0:7], action2[0:7]))))
+        pos_ctrl_2 *= 0.05  # limit maximum change in position
+        # fixed rotation of the end effector, expressed as a quaternion
+        rot_ctrl_2 = [1., 0., 1., 0.]
+        gripper_ctrl_2 = np.array([gripper_ctrl_2, gripper_ctrl_2])
+        assert gripper_ctrl_2.shape == (2,)
+        if self.block_gripper:
+            gripper_ctrl_2 = np.zeros_like(gripper_ctrl_2)
+        action_2 = np.concatenate([pos_ctrl_2, rot_ctrl_2, gripper_ctrl_2])
+
+        action = np.transpose(np.array(list(zip(action[0:7], action_2[0:7]))))
 
         # Apply action to simulation.
         utils.ctrl_set_action(self.sim, action)
@@ -149,11 +166,50 @@ class GoalieEnv(robot_env.RobotEnv):
             object_velp.ravel(), object_velr.ravel(), grip_velp, gripper_vel,
         ])
 
-        # NEW CODE
-
         goal = self.goal
 
-        # end
+        return {
+            'observation': obs.copy(),
+            'achieved_goal': achieved_goal.copy(),
+            'desired_goal': goal.copy(),
+        }
+
+    # This needs to be rotated pi around the middle of the table.
+    def _get_obs_2(self):
+        # positions
+        grip_pos = self.sim.data.get_site_xpos('robot1:grip')
+        dt = self.sim.nsubsteps * self.sim.model.opt.timestep
+        grip_velp = self.sim.data.get_site_xvelp('robot1:grip') * dt
+        robot_qpos, robot_qvel = utils.robot_get_obs(self.sim)
+        if self.has_object:
+            object_pos = self.sim.data.get_site_xpos('object0')
+            # rotations
+            object_rot = rotations.mat2euler(
+                self.sim.data.get_site_xmat('object0'))
+            # velocities
+            object_velp = self.sim.data.get_site_xvelp('object0') * dt
+            object_velr = self.sim.data.get_site_xvelr('object0') * dt
+            # gripper state
+            object_rel_pos = object_pos - grip_pos
+            object_velp -= grip_velp
+        else:
+            object_pos = object_rot = object_velp = object_velr = object_rel_pos = np.zeros(
+                0)
+        gripper_state = robot_qpos[-2:]
+        # change to a scalar if the gripper is made symmetric
+        gripper_vel = robot_qvel[-2:] * dt
+
+        if not self.has_object:
+            achieved_goal = grip_pos.copy()
+        else:
+            achieved_goal = np.squeeze(object_pos.copy())
+        obs = np.concatenate([
+            grip_pos, object_pos.ravel(), object_rel_pos.ravel(
+            ), gripper_state, object_rot.ravel(),
+            object_velp.ravel(), object_velr.ravel(), grip_velp, gripper_vel,
+        ])
+
+        goal = self.sim.data.get_body_xpos('wall3')[:3]
 
         return {
             'observation': obs.copy(),
@@ -229,7 +285,7 @@ class GoalieEnv(robot_env.RobotEnv):
         # NEW CODE
 
         goal = self.sim.data.get_body_xpos('wall0')[:3]
-        goal[:1] -= 0.05  # moves away from wall
+        #goal[:1] -= 0.05  # moves away from wall
         #goal[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
 
         # end
