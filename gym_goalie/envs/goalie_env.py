@@ -111,9 +111,12 @@ class GoalieEnv(robot_env.RobotEnv):
 
         if self.other_model is not None:
             obs = self._get_obs_2()
+            # print(obs["observation"]-self._get_obs()["observation"])
             action_2, _, _, _ = self.other_model.step(obs)
         else:
             action_2 = self.action_space.sample()
+
+        action_2 = action_2.copy()  # ensure that we don't change the action outside of this scope
 
         pos_ctrl_2, gripper_ctrl_2 = action_2[:3], action_2[3]
 
@@ -126,6 +129,10 @@ class GoalieEnv(robot_env.RobotEnv):
             gripper_ctrl_2 = np.zeros_like(gripper_ctrl_2)
         action_2 = np.concatenate([pos_ctrl_2, rot_ctrl_2, gripper_ctrl_2])
 
+        # action_2 = action.copy()
+        action_2[0] = -action_2[0]
+        action_2[1] = -action_2[1]
+
         action = np.transpose(np.array(list(zip(action[0:7], action_2[0:7]))))
 
         # Apply action to simulation.
@@ -133,11 +140,13 @@ class GoalieEnv(robot_env.RobotEnv):
         utils.mocap_set_action(self.sim, action)
 
     def _get_obs(self):
+
         # positions
         grip_pos = self.sim.data.get_site_xpos('robot0:grip')
         dt = self.sim.nsubsteps * self.sim.model.opt.timestep
         grip_velp = self.sim.data.get_site_xvelp('robot0:grip') * dt
         robot_qpos, robot_qvel = utils.robot_get_obs(self.sim)
+
         if self.has_object:
             object_pos = self.sim.data.get_site_xpos('object0')
             # rotations
@@ -165,6 +174,10 @@ class GoalieEnv(robot_env.RobotEnv):
             ), gripper_state, object_rot.ravel(),
             object_velp.ravel(), object_velr.ravel(), grip_velp, gripper_vel,
         ])
+
+        sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
+        site_id = self.sim.model.site_name2id('target0')
+        #self.sim.model.site_pos[site_id] = object_pos.ravel() - sites_offset[0]
 
         goal = self.goal
 
@@ -176,19 +189,38 @@ class GoalieEnv(robot_env.RobotEnv):
 
     # This needs to be rotated pi around the middle of the table.
     def _get_obs_2(self):
+
         # positions
+        table_pos = (self.sim.data.get_body_xpos('robot0:base_link')[:3]+self.sim.data.get_body_xpos('robot1:base_link')[:3])/2
+
         grip_pos = self.sim.data.get_site_xpos('robot1:grip')
+        grip_pos[0:2] = -grip_pos[0:2]+2*table_pos[0:2]
+
         dt = self.sim.nsubsteps * self.sim.model.opt.timestep
         grip_velp = self.sim.data.get_site_xvelp('robot1:grip') * dt
         robot_qpos, robot_qvel = utils.robot_get_obs(self.sim)
+
+        #robot_qpos[0:2] = -robot_qpos[0:2]+2*table_pos[0:2]
+
+        grip_velp[0:2] = -grip_velp[0:2]
+        #robot_qvel[0:2] = -robot_qvel[0:2]
+
+
+
         if self.has_object:
             object_pos = self.sim.data.get_site_xpos('object0')
+            object_pos[0:2] = -object_pos[0:2] + 2 * table_pos[0:2]
+
             # rotations
             object_rot = rotations.mat2euler(
                 self.sim.data.get_site_xmat('object0'))
             # velocities
             object_velp = self.sim.data.get_site_xvelp('object0') * dt
             object_velr = self.sim.data.get_site_xvelr('object0') * dt
+
+            object_velp[0:2] = -object_velp[0:2]
+            object_velr[0:2] = -object_velr[0:2]
+
             # gripper state
             object_rel_pos = object_pos - grip_pos
             object_velp -= grip_velp
@@ -203,13 +235,37 @@ class GoalieEnv(robot_env.RobotEnv):
             achieved_goal = grip_pos.copy()
         else:
             achieved_goal = np.squeeze(object_pos.copy())
+
+        # gripper_vel[1] = -gripper_vel[1]
+
+        object_pos_ravel = object_pos.ravel()
+        object_rel_pos_ravel = object_rel_pos.ravel()
+        object_velp_ravel = object_velp.ravel()
+        object_velr_ravel = object_velr.ravel()
+        object_rot_ravel = object_rot.ravel()
+
+        object_rot_ravel[0:2] = -object_rot_ravel[0:2]
+
+        # print(object_rot_ravel)
+
         obs = np.concatenate([
-            grip_pos, object_pos.ravel(), object_rel_pos.ravel(
-            ), gripper_state, object_rot.ravel(),
-            object_velp.ravel(), object_velr.ravel(), grip_velp, gripper_vel,
+            grip_pos, object_pos_ravel, object_rel_pos_ravel, gripper_state, object_rot_ravel,
+            object_velp_ravel, object_velr_ravel, grip_velp, gripper_vel,
         ])
 
+
+        #print(object_velp_ravel)
+
         goal = self.sim.data.get_body_xpos('wall3')[:3]
+        goal[0:2] = -goal[0:2]+2*table_pos[0:2]
+
+
+        sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
+        site_id = self.sim.model.site_name2id('target1')
+        self.sim.model.site_pos[site_id] = grip_pos - sites_offset[0]
+        site_id = self.sim.model.site_name2id('target0')
+        self.sim.model.site_pos[site_id] = object_pos_ravel - sites_offset[0]
+
 
         return {
             'observation': obs.copy(),
@@ -228,10 +284,10 @@ class GoalieEnv(robot_env.RobotEnv):
 
     def _render_callback(self):
         # Visualize target.
-        sites_offset = (self.sim.data.site_xpos -
-                        self.sim.model.site_pos).copy()
-        site_id = self.sim.model.site_name2id('target0')
-        self.sim.model.site_pos[site_id] = self.goal - sites_offset[0]
+        #sites_offset = (self.sim.data.site_xpos -
+        #                self.sim.model.site_pos).copy()
+        #site_id = self.sim.model.site_name2id('target0')
+        #self.sim.model.site_pos[site_id] = self.goal - sites_offset[0]
         self.sim.forward()
 
     def _reset_sim(self):
@@ -251,17 +307,27 @@ class GoalieEnv(robot_env.RobotEnv):
 
             # NEW CODE
 
-            object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
-            object_qpos[:1] -= 0.1  # moves away from wall
+            # object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
+            # object_qpos[:1] -= 0.1  # moves away from wall
+            # object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
+            #
+            # self.sim.data.set_joint_qpos('object0:joint', object_qpos)
+            #
+            # object_qvel = self.sim.data.get_joint_qvel('object0:joint')
+            # object_qvel[:1] = -1  # move towards robot
+            # object_qvel[1:2] = np.random.uniform(-1, 1)  # different directions
+            # self.sim.data.set_joint_qvel('object0:joint', object_qvel)
+
+            object_qpos[:2] = self.sim.data.get_body_xpos('wall3')[:2]
+            object_qpos[:1] += 0.1  # moves away from wall
             object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
 
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
             object_qvel = self.sim.data.get_joint_qvel('object0:joint')
-            object_qvel[:1] = -1  # move towards robot
+            object_qvel[:1] = 1  # move towards robot
             object_qvel[1:2] = np.random.uniform(-1, 1)  # different directions
             self.sim.data.set_joint_qvel('object0:joint', object_qvel)
-
             # end
 
 
