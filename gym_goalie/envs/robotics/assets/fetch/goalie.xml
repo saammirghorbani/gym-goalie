@@ -8,26 +8,27 @@
 	<include file="shared.xml"></include>
 
 	<worldbody>
-		<geom name="floor0" pos="1 0.75 0" size="1.05 0.7 1" type="plane" condim="3" material="floor_mat" solref="-100 -100"></geom>
+		<!--solref="-100 -100"-->
+		<geom name="floor0" pos="1 0.75 0" size="1.05 0.875 1" type="plane" condim="3" material="floor_mat"></geom>
 		<body name="floor0" pos="1 0.75 0">
 			<site name="target0" pos="0 0 0.5" size="0.02 0.02 0.02" rgba="1 0 0 1" type="sphere"></site>
 		</body>
 
 		<include file="robot.xml"></include>
 
+		<!--solref="-100 -100"-->
 		<body name="table0" pos="1.32441906 0.75018422 0.2">
-			<geom size="0.625 0.45 0.2" type="box" condim="3" name="table0" material="table_mat" mass="2000" friction="0.0001 0.005 0.0000001" solref="-100 -100"></geom>
+			<geom size="0.625 0.625 0.2" type="box" condim="3" name="table0" material="table_mat" mass="2000" friction="0.0001 0.005 0.0000001"></geom>
 		</body>
 
-		<body name="wall0" pos="1.95 0.75018422 0.25">
-			<geom size="0.04 0.45 0.25" type="box" condim="1" name="wall0" material="table_mat" mass="2000" friction="0 0 0" ></geom>
+		<body name="wall0" pos="1.95 0.75018422 0.6">
+			<geom size="0.04 0.625 0.6" type="box" condim="1" name="wall0" material="table_mat" mass="2000" friction="0 0 0" ></geom>
 		</body>
 
 		<!--
 		<body name="wall3" pos="0.7 0.75018422 0.25">
 			<geom size="0.04 0.45 0.25" type="box" condim="1" name="wall3" material="table_mat" mass="2000" friction="0 0 0" ></geom>
 		</body>
-		-->
 
 		<body name="wall1" pos="1.32441906 1.225 0.25">
 			<geom size="0.625 0.04 0.25" type="box" condim="1" name="wall1" material="table_mat" mass="2000" friction="0 0 0" ></geom>
@@ -36,6 +37,7 @@
 		<body name="wall2" pos="1.32441906 0.275 0.25">
 			<geom size="0.625 0.04 0.25" type="box" condim="1" name="wall2" material="table_mat" mass="2000" friction="0 0 0" ></geom>
 		</body>
+		-->
 
 
 		<body name="object0" pos="0.025 0.025 0.02">
