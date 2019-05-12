@@ -2,7 +2,6 @@ import numpy as np
 
 from gym_goalie.envs.robotics import rotations, robot_env, utils
 
-
 def goal_distance(goal_a, goal_b):
     assert goal_a.shape == goal_b.shape
 
@@ -14,14 +13,14 @@ def goal_distance(goal_a, goal_b):
         dist_list = []
         for g_a, g_b in zip(goal_a, goal_b):
             dist = np.abs(g_a[0] - g_b[0])
-            if g_a[2] < 0.4:  # something like 0.42 is table height
-                dist += 100  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
+            if g_a[2] < 0.2:  # something like 0.42 is table height
+                dist += 10000  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
             dist_list.append(dist)
         return np.array(dist_list)
 
     dist = np.abs(goal_a[0]-goal_b[0])
-    if goal_a[2] < 0.4:  # something like 0.42 is table height
-        dist += 100  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
+    if goal_a[2] < 0.2:  # something like 0.42 is table height
+        dist += 10000  # if puck falls off table, MAKE IT HURT (maybe tweak !!!)
     return dist
 
     # end
@@ -63,9 +62,11 @@ class GoalieEnv(robot_env.RobotEnv):
         self.target_range = target_range
         self.distance_threshold = distance_threshold
         self.reward_type = reward_type
+        self.success = False
+        self.has_moved_away = False
 
         super(GoalieEnv, self).__init__(
-            model_path=model_path, n_substeps=n_substeps, n_actions=4,
+            model_path=model_path, n_substeps=n_substeps, n_actions=5,
             initial_qpos=initial_qpos)
 
     # GoalEnv methods
@@ -73,9 +74,28 @@ class GoalieEnv(robot_env.RobotEnv):
 
     def compute_reward(self, achieved_goal, goal, info):
         # Compute distance between goal and the achieved goal.
+
         d = goal_distance(achieved_goal, goal)
         if self.reward_type == 'sparse':
-            return -(d > self.distance_threshold).astype(np.float32)
+            s_d = -(d > self.distance_threshold).astype(np.float32)
+
+            if np.shape(s_d) > (1,):
+                return s_d
+
+            if -(d > 700.).astype(np.float32) == -1:  # Off the table; BAD
+                self.success = False
+                #print("OFF")
+                return -1.
+
+            if s_d == -1. and not self.has_moved_away:
+                #print("MOVED")
+                self.has_moved_away = True
+
+            if s_d == -0. and self.has_moved_away and not self.success:
+                #print("SUCCESS")
+                self.success = True
+
+            return -0. if self.success else -1.
         else:
             return -d
         # return -d
@@ -90,13 +110,12 @@ class GoalieEnv(robot_env.RobotEnv):
             self.sim.forward()
 
     def _set_action(self, action):
-        assert action.shape == (4,)
+        assert action.shape == (5,)
         action = action.copy()  # ensure that we don't change the action outside of this scope
         pos_ctrl, gripper_ctrl = action[:3], action[3]
-
         pos_ctrl *= 0.05  # limit maximum change in position
         # fixed rotation of the end effector, expressed as a quaternion
-        rot_ctrl = [1., 0., 1., 0.]
+        rot_ctrl = [-1, -1, action[4], action[4]]
         gripper_ctrl = np.array([gripper_ctrl, gripper_ctrl])
         assert gripper_ctrl.shape == (2,)
         if self.block_gripper:
@@ -189,15 +208,20 @@ class GoalieEnv(robot_env.RobotEnv):
 
             object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
             object_qpos[:1] -= 0.1  # move away from wall
-            object_qpos[:3] += np.random.uniform(0.5, 1)  # move up
-            object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
+            object_qpos[2] += np.random.uniform(0.1, 0.3)  # move up
+            random_y_pos = -0.6
+            object_qpos[1:2] += random_y_pos  # random pos along wall
 
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
             object_qvel = self.sim.data.get_joint_qvel('object0:joint')
             object_qvel[:1] = -1  # move towards robot
-            object_qvel[1:2] = np.random.uniform(-1, 1)  # different directions
+            object_qvel[1:2] = np.random.uniform(-0.5-0.5*random_y_pos/0.6, 0.5-0.5*random_y_pos/0.6)
+            # different directions: ranging between [0, 1] to [-1, 0] between -0.6 and 0.6. Does not fall off table
             self.sim.data.set_joint_qvel('object0:joint', object_qvel)
+
+            self.success = False
+            self.has_moved_away = False
 
             # end
 
@@ -242,7 +266,7 @@ class GoalieEnv(robot_env.RobotEnv):
         # Move end effector into position.
         gripper_target = np.array(
             [-0.498, 0.005, -0.431 + self.gripper_extra_height]) + self.sim.data.get_site_xpos('robot0:grip')
-        gripper_rotation = np.array([1., 0., 1., 0.])
+        gripper_rotation = np.array([-1., -1., 0., 0.])
         self.sim.data.set_mocap_pos('robot0:mocap', gripper_target)
         self.sim.data.set_mocap_quat('robot0:mocap', gripper_rotation)
         for _ in range(10):
@@ -253,6 +277,9 @@ class GoalieEnv(robot_env.RobotEnv):
             'robot0:grip').copy()
         if self.has_object:
             self.height_offset = self.sim.data.get_site_xpos('object0')[2]
+
+        self.success = False
+        self.has_moved_away = False
 
     def render(self, mode='human', width=500, height=500):
         return super(GoalieEnv, self).render(mode, width, height)
