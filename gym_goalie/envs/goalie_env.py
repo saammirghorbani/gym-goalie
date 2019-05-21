@@ -175,8 +175,8 @@ class GoalieEnv(robot_env.RobotEnv):
             object_velp.ravel(), object_velr.ravel(), grip_velp, gripper_vel,
         ])
 
-        sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
-        site_id = self.sim.model.site_name2id('target0')
+        #sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
+        #site_id = self.sim.model.site_name2id('target0')
         #self.sim.model.site_pos[site_id] = object_pos.ravel() - sites_offset[0]
 
         goal = self.goal
@@ -260,11 +260,11 @@ class GoalieEnv(robot_env.RobotEnv):
         goal[0:2] = -goal[0:2]+2*table_pos[0:2]
 
 
-        sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
-        site_id = self.sim.model.site_name2id('target1')
-        self.sim.model.site_pos[site_id] = grip_pos - sites_offset[0]
-        site_id = self.sim.model.site_name2id('target0')
-        self.sim.model.site_pos[site_id] = object_pos_ravel - sites_offset[0]
+        # sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
+        # site_id = self.sim.model.site_name2id('target1')
+        # self.sim.model.site_pos[site_id] = grip_pos - sites_offset[0]
+        # site_id = self.sim.model.site_name2id('target0')
+        # self.sim.model.site_pos[site_id] = object_pos_ravel - sites_offset[0]
 
 
         return {
@@ -307,27 +307,27 @@ class GoalieEnv(robot_env.RobotEnv):
 
             # NEW CODE
 
-            # object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
-            # object_qpos[:1] -= 0.1  # moves away from wall
-            # object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
-            #
-            # self.sim.data.set_joint_qpos('object0:joint', object_qpos)
-            #
-            # object_qvel = self.sim.data.get_joint_qvel('object0:joint')
-            # object_qvel[:1] = -1  # move towards robot
-            # object_qvel[1:2] = np.random.uniform(-1, 1)  # different directions
-            # self.sim.data.set_joint_qvel('object0:joint', object_qvel)
-
-            object_qpos[:2] = self.sim.data.get_body_xpos('wall3')[:2]
-            object_qpos[:1] += 0.1  # moves away from wall
+            object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
+            object_qpos[:1] -= 0.1  # moves away from wall
             object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
 
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
             object_qvel = self.sim.data.get_joint_qvel('object0:joint')
-            object_qvel[:1] = 1  # move towards robot
+            object_qvel[:1] = -1  # move towards robot
             object_qvel[1:2] = np.random.uniform(-1, 1)  # different directions
             self.sim.data.set_joint_qvel('object0:joint', object_qvel)
+
+            # object_qpos[:2] = self.sim.data.get_body_xpos('wall3')[:2]
+            # object_qpos[:1] += 0.1  # moves away from wall
+            # object_qpos[1:2] += np.random.uniform(-0.4, 0.4)  # random pos along wall
+            #
+            # self.sim.data.set_joint_qpos('object0:joint', object_qpos)
+            #
+            # object_qvel = self.sim.data.get_joint_qvel('object0:joint')
+            # object_qvel[:1] = 1  # move towards robot
+            # object_qvel[1:2] = np.random.uniform(-1, 1)  # different directions
+            # self.sim.data.set_joint_qvel('object0:joint', object_qvel)
             # end
 
 
