@@ -66,7 +66,7 @@ class GoalieEnv(robot_env.RobotEnv):
         self.has_moved_away = False
 
         super(GoalieEnv, self).__init__(
-            model_path=model_path, n_substeps=n_substeps, n_actions=5,
+            model_path=model_path, n_substeps=n_substeps, n_actions=4,
             initial_qpos=initial_qpos)
 
     # GoalEnv methods
@@ -110,12 +110,21 @@ class GoalieEnv(robot_env.RobotEnv):
             self.sim.forward()
 
     def _set_action(self, action):
-        assert action.shape == (5,)
+        assert action.shape == (4,)
+
+        table_pos = self.sim.data.get_body_xpos('table0')[:3]
+        grip_pos = self.sim.data.get_site_xpos('robot0:grip')
+
+        paddle_rot = np.sign(table_pos[1]-grip_pos[1])
+
         action = action.copy()  # ensure that we don't change the action outside of this scope
         pos_ctrl, gripper_ctrl = action[:3], action[3]
         pos_ctrl *= 0.05  # limit maximum change in position
+
+        #pos_ctrl[1] = -0.05
+
         # fixed rotation of the end effector, expressed as a quaternion
-        rot_ctrl = [-1, -1, action[4], action[4]]
+        rot_ctrl = [-1, -1, -1, -1]
         gripper_ctrl = np.array([gripper_ctrl, gripper_ctrl])
         assert gripper_ctrl.shape == (2,)
         if self.block_gripper:
@@ -209,14 +218,14 @@ class GoalieEnv(robot_env.RobotEnv):
             object_qpos[:2] = self.sim.data.get_body_xpos('wall0')[:2]
             object_qpos[:1] -= 0.1  # move away from wall
             object_qpos[2] += np.random.uniform(0.1, 0.3)  # move up
-            random_y_pos = -0.6
+            random_y_pos = np.random.uniform(-0.4, 0.4)
             object_qpos[1:2] += random_y_pos  # random pos along wall
 
             self.sim.data.set_joint_qpos('object0:joint', object_qpos)
 
             object_qvel = self.sim.data.get_joint_qvel('object0:joint')
             object_qvel[:1] = -1  # move towards robot
-            object_qvel[1:2] = np.random.uniform(-0.5-0.5*random_y_pos/0.6, 0.5-0.5*random_y_pos/0.6)
+            #object_qvel[1:2] = np.random.uniform(-0.5-0.5*random_y_pos/0.6, 0.5-0.5*random_y_pos/0.6)
             # different directions: ranging between [0, 1] to [-1, 0] between -0.6 and 0.6. Does not fall off table
             self.sim.data.set_joint_qvel('object0:joint', object_qvel)
 
@@ -266,7 +275,7 @@ class GoalieEnv(robot_env.RobotEnv):
         # Move end effector into position.
         gripper_target = np.array(
             [-0.498, 0.005, -0.431 + self.gripper_extra_height]) + self.sim.data.get_site_xpos('robot0:grip')
-        gripper_rotation = np.array([-1., -1., 0., 0.])
+        gripper_rotation = np.array([-1, -1, -1, -1])
         self.sim.data.set_mocap_pos('robot0:mocap', gripper_target)
         self.sim.data.set_mocap_quat('robot0:mocap', gripper_rotation)
         for _ in range(10):

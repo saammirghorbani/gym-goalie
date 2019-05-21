@@ -18,11 +18,11 @@
 
 		<!--solref="-100 -100"-->
 		<body name="table0" pos="1.32441906 0.75018422 0.2">
-			<geom size="0.625 0.625 0.2" type="box" condim="3" name="table0" material="table_mat" mass="2000" friction="0.0001 0.005 0.0000001"></geom>
+			<geom size="0.625 0.425 0.2" type="box" condim="3" name="table0" material="table_mat" mass="2000" friction="0.0001 0.005 0.0000001"></geom>
 		</body>
 
 		<body name="wall0" pos="1.95 0.75018422 0.6">
-			<geom size="0.04 0.625 0.6" type="box" condim="1" name="wall0" material="table_mat" mass="2000" friction="0 0 0" ></geom>
+			<geom size="0.04 0.425 0.6" type="box" condim="1" name="wall0" material="table_mat" mass="2000" friction="0 0 0" ></geom>
 		</body>
 
 		<!--
